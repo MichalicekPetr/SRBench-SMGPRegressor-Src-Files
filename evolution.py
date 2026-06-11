@@ -73,7 +73,7 @@ class VectorEvolutionAlgorithm:
         for generation in range(maxGenerations):
             print("------------------------ Generation: " + str(generation) + " ------------------------")
             
-            #Fitness evaluation
+            # Fitness evaluation
             for i in range(populationSize):
                 self.fitnessValues[i] = self.fitnessFunction.evaluateFitness(individual = self.population.individualList[i], 
                         dataSource = self.dataSource, dataIndexes = self.dataIndexes, fList = self.fList, variableList = self.variableList)
@@ -99,8 +99,10 @@ class VectorEvolutionAlgorithm:
                 except Exception:
                     pass
 
-            #Selection
+            # Selection
+            # === OPTIMIZED SELECTION ===
             newIndividualList = []
+            newFitnessValues = [] # Auxiliary array to maintain the fitness of the new generation
             sortedIndexes = sorted(range(populationSize), key=lambda k: self.fitnessValues[k], reverse=True)
 
             for i in range(0, populationSize):
@@ -110,14 +112,19 @@ class VectorEvolutionAlgorithm:
                 partner = self.population.individualList[idx2]
                 new = self.crossoverFunc(ind1=original, ind2=partner, fset=self.fList, varlist=self.variableList, 
                                          minTerminalVal=minTerminalNodeVal, maxTerminalVal=maxTerminalNodeVal, rng=self.rng)
+                
                 scoreOriginal = self.fitnessValues[idx1]
                 scoreNew = self.fitnessFunction.evaluateFitness(individual = new, 
                         dataSource = self.dataSource, dataIndexes = self.dataIndexes, fList = self.fList, variableList = self.variableList)
+                
                 if scoreNew >= scoreOriginal:
                     newIndividualList.append(new)
+                    newFitnessValues.append(scoreNew) # We know exactly what the fitness is
                 else:
                     newIndividualList.append(original)
+                    newFitnessValues.append(scoreOriginal) # We know exactly what the fitness is
 
+            # Injection of random individuals (their fitness is not yet known, set to -1)
             randomIndividualCount = int(round(randomIndividualRate * populationSize))
             for idx in range(randomIndividualCount):
                 pos = max(0, populationSize - 1 - idx)
@@ -131,18 +138,29 @@ class VectorEvolutionAlgorithm:
                     rng=self.rng,
                 )
                 newIndividualList[pos] = new
+                newFitnessValues[pos] = -1 # Flag indicating that fitness must be evaluated
 
-            #Mutation
+            # === OPTIMIZED MUTATION ===
             for i in range(populationSize):
-                mutated = deepcopy(self.population.individualList[i])
+                mutated = deepcopy(newIndividualList[i])
                 self.mutationFunc(individual = mutated, mutationRate = mutationRate, fList = self.fList,
                              minTerminalVal = minTerminalNodeVal, maxTerminalVal = maxTerminalNodeVal,
                              varlist = self.variableList, variableProbability = variableProbability, rng=self.rng)
-                originalFitness = self.fitnessValues[i]
+                
+                # If it is a random individual from the end of the array, we must first evaluate its base fitness
+                if newFitnessValues[i] == -1:
+                    originalFitness = self.fitnessFunction.evaluateFitness(individual = newIndividualList[i], 
+                            dataSource = self.dataSource, dataIndexes = self.dataIndexes, fList = self.fList, variableList = self.variableList)
+                    newFitnessValues[i] = originalFitness
+                else:
+                    originalFitness = newFitnessValues[i] # <--- Time saved here! No function call, retrieved from the array.
+                
                 mutatedFitness = self.fitnessFunction.evaluateFitness(individual = mutated, 
                         dataSource = self.dataSource, dataIndexes = self.dataIndexes, fList = self.fList, variableList = self.variableList)
+                
                 if mutatedFitness > originalFitness:
                     newIndividualList[i] = mutated
+                    newFitnessValues[i] = mutatedFitness # Update the value for potential subsequent generations
 
             self.population.individualList = newIndividualList
 
@@ -150,7 +168,7 @@ class VectorEvolutionAlgorithm:
                 print("Stopping evolution because maxSeconds was exceeded.")
                 break
 
-        # Po dokončení všech generací vrať nejlepšího jedince
+        # After completing all generations, return the best individual
         if best_individual is not None:
             print("\n=== Best individual found ===")
             print(f"Generation: {best_generation}, Fitness: {best_fitness:.6f}")
@@ -159,6 +177,7 @@ class VectorEvolutionAlgorithm:
             except Exception:
                 print(str(best_individual))
         return best_individual
+
 
 class EvolutionAlgorithm:
     """A tree-based genetic programming evolution engine.
@@ -195,7 +214,6 @@ class EvolutionAlgorithm:
         self.esrandomIndividualRate = None
         self.esoriginalIndividualRatio = None
         self.esPopulationSize = None
-
 
     def initEvolutionStrategy(self, evolutionStrategy: EvolutionStrategy):
         """Configure an existing evolution strategy instance."""
@@ -245,7 +263,7 @@ class EvolutionAlgorithm:
         for generation in range(maxGenerations):
             print("------------------------ Generation: " + str(generation) + " ------------------------")
             
-            #Fitness evaluation
+            # Fitness evaluation
             for i in range(populationSize):
                 self.fitnessValues[i] = self.fitnessFunction.evaluateFitness(individual = self.population.individualList[i], 
                         dataSource = self.dataSource, dataIndexes = self.dataIndexes, 
@@ -272,7 +290,7 @@ class EvolutionAlgorithm:
                 except Exception:
                     pass
 
-            #Selection
+            # Selection
             newIndividualList = []
             totalFitness = sum(self.fitnessValues)
 
@@ -295,7 +313,7 @@ class EvolutionAlgorithm:
                         newIndividual = deepcopy(selectedIndividual)
                         newIndividualList.append(newIndividual)
 
-            #Mutation
+            # Mutation
             for i in range(populationSize):
                 self.mutationFunc(individual = newIndividualList[i], mutationRate = mutationRate, 
                              minFunctionNodeVal = self.population.smoothMultifunctionSet.minVal, 
@@ -306,13 +324,13 @@ class EvolutionAlgorithm:
             if tuneConstants:
                 if self.esParamsSet:
                     result = self.evolutionStrategy.tuneConstants(individualList = newIndividualList, maxGenerations = self.esmaxgenerations, maxTimeSeconds = self.esmaxseconds, 
-                                                    minTerminalValue = minTerminalNodeVal, maxTerminalValue = maxTerminalNodeVal, 
-                                                    originalIndividualRatio = self.esoriginalIndividualRatio, randomIndividualRatio = self.esrandomIndividualRate, 
-                                                    crossoverRate = self.escrossoverRate, mutationRate = self.esmutationRate, populationSize = self.esPopulationSize)
+                                                                    minTerminalValue = minTerminalNodeVal, maxTerminalValue = maxTerminalNodeVal, 
+                                                                    originalIndividualRatio = self.esoriginalIndividualRatio, randomIndividualRatio = self.esrandomIndividualRate, 
+                                                                    crossoverRate = self.escrossoverRate, mutationRate = self.esmutationRate, populationSize = self.esPopulationSize)
                 else:
                     result = self.evolutionStrategy.tuneConstants(individualList = newIndividualList, maxGenerations = 100, maxTimeSeconds = 2, 
-                                                    minTerminalValue = minTerminalNodeVal, maxTerminalValue = maxTerminalNodeVal, 
-                                                    originalIndividualRatio = 0.5, randomIndividualRatio = 0.5, crossoverRate = 0.5)
+                                                                    minTerminalValue = minTerminalNodeVal, maxTerminalValue = maxTerminalNodeVal, 
+                                                                    originalIndividualRatio = 0.5, randomIndividualRatio = 0.5, crossoverRate = 0.5)
                 if result is not None:
                     tuned_individual, tuned_fitness = result
                     if math.isinf(tuned_fitness):
@@ -321,7 +339,7 @@ class EvolutionAlgorithm:
 
             self.population.individualList = newIndividualList
 
-        # Po dokončení všech generací vypiš nejlepšího jedince
+        # After completing all generations, print the best individual
         if best_individual is not None:
             print("\n=== Best individual found ===")
             print(f"Generation: {best_generation}, Fitness: {best_fitness:.6f}")
@@ -329,7 +347,4 @@ class EvolutionAlgorithm:
                 best_individual.printVerticalTree()
             except Exception:
                 print(str(best_individual))
-
-
-
-
+        return best_individual

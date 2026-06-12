@@ -74,7 +74,7 @@ class Crossover():
         rng = rng if rng is not None else random
         newInd = deepcopy(ind1)
         nodeCnt = ind1.vector.size
-        pointCnt = get_declining_random_fast(n=nodeCnt, rate=18, rng=rng)
+        pointCnt = get_declining_random_fast(n=nodeCnt, rate=67, rng=rng)
         indexes = list(range(0, nodeCnt))
         points = []
 

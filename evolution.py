@@ -71,7 +71,7 @@ class VectorEvolutionAlgorithm:
         start_time = time.monotonic() if maxSeconds is not None else None
 
         for generation in range(maxGenerations):
-            print("------------------------ Generation: " + str(generation) + " ------------------------")
+            #print("------------------------ Generation: " + str(generation) + " ------------------------")
             
             # Fitness evaluation
             for i in range(populationSize):
@@ -83,7 +83,7 @@ class VectorEvolutionAlgorithm:
                 max_fitness = max(self.fitnessValues)
                 min_fitness = min(self.fitnessValues)
                 avg_fitness = sum(self.fitnessValues) / float(populationSize)
-                print(f"Fitness summary — max: {max_fitness:.4f}, min: {min_fitness:.4f}, avg: {avg_fitness:.4f}")
+               # print(f"Fitness summary — max: {max_fitness:.4f}, min: {min_fitness:.4f}, avg: {avg_fitness:.4f}")
 
                 # Update best individual seen so far
                 try:
@@ -94,7 +94,7 @@ class VectorEvolutionAlgorithm:
                         best_individual = candidate
                         best_generation = generation
                     if math.isinf(max_fitness):
-                        print(f"Perfect fit found in GP at generation {generation}. Stopping evolution.")
+                       # print(f"Perfect fit found in GP at generation {generation}. Stopping evolution.")
                         return candidate
                 except Exception:
                     pass
@@ -165,13 +165,13 @@ class VectorEvolutionAlgorithm:
             self.population.individualList = newIndividualList
 
             if maxSeconds is not None and start_time is not None and (time.monotonic() - start_time) >= maxSeconds:
-                print("Stopping evolution because maxSeconds was exceeded.")
+                #print("Stopping evolution because maxSeconds was exceeded.")
                 break
 
         # After completing all generations, return the best individual
         if best_individual is not None:
-            print("\n=== Best individual found ===")
-            print(f"Generation: {best_generation}, Fitness: {best_fitness:.6f}")
+            #print("\n=== Best individual found ===")
+            #print(f"Generation: {best_generation}, Fitness: {best_fitness:.6f}")
             try:
                 best_individual.printVerticalTree()
             except Exception:
@@ -261,7 +261,7 @@ class EvolutionAlgorithm:
         best_generation = None
 
         for generation in range(maxGenerations):
-            print("------------------------ Generation: " + str(generation) + " ------------------------")
+           #print("------------------------ Generation: " + str(generation) + " ------------------------")
             
             # Fitness evaluation
             for i in range(populationSize):

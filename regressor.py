@@ -39,14 +39,14 @@ except Exception:
             raise ValueError("X must be a 2D array or matrix")
         return X_arr
 
-from crossover import Crossover
-from data import ArrayDataSource
-from evolution import VectorEvolutionAlgorithm
-from fitness import MeanSquaredErrorFitnessFunctionVector
-from individual import Individual
-from mutation import Mutation
-from smoothMultifunctionSet import SmoothMultifunctionSet
-from variable import Variable
+from smgp.crossover import Crossover
+from smgp.data import ArrayDataSource
+from smgp.evolution import VectorEvolutionAlgorithm
+from smgp.fitness import MeanSquaredErrorFitnessFunctionVector
+from smgp.individual import Individual
+from smgp.mutation import Mutation
+from smgp.smoothMultifunctionSet import SmoothMultifunctionSet
+from smgp.variable import Variable
 
 
 class SMGPRegressor(BaseEstimator, RegressorMixin):
@@ -55,15 +55,15 @@ class SMGPRegressor(BaseEstimator, RegressorMixin):
         random_state: Optional[int] = None,
         max_time: Optional[float] = None,
         population_size: int = 100,
-        generations: int = 100,
-        depth: int = 4,
-        mutation_rate: float = 0.01,
-        random_individual_rate: float = 0.1,
-        variable_probability: float = 0.4,
+        generations: int = 100000,
+        depth: int = 6,
+        mutation_rate: float = 0.03,
+        random_individual_rate: float = 0.08,
+        variable_probability: float = 0.45,
         min_terminal_node_val: float = 0.0,
         max_terminal_node_val: float = 10.0,
         function_set: Optional[Union[SmoothMultifunctionSet, List[str]]] = None,
-        taylor_sum_elements: int = 100,
+        taylor_sum_elements: int = 5,
         use_triangle_fval: bool = True,
         verbose: bool = False,
     ):
@@ -229,7 +229,7 @@ class SMGPRegressor(BaseEstimator, RegressorMixin):
             fitnessFunction=MeanSquaredErrorFitnessFunctionVector(),
             dataIndexes=list(range(X_arr.shape[0])),
             mutationFunc=Mutation.vectorMutation,
-             crossoverFunc=Crossover.swappingPointCrossover,
+             crossoverFunc=Crossover.betweenPointCrossover,
             rng=self.rng,
             taylorSumElements=self.taylor_sum_elements,
             useTriangleFval=self.use_triangle_fval,
